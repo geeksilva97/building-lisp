@@ -1,7 +1,7 @@
 #include "mpc.h"
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 
 #ifdef _WIN32
 
@@ -23,7 +23,6 @@ void add_history(char *unused) {}
 #else
 #include <editline/readline.h>
 #endif
-
 
 long eval_op(long x, char *op, long y) {
   if (strcmp(op, "^") == 0) {
@@ -53,9 +52,59 @@ long eval_op(long x, char *op, long y) {
   return 0;
 }
 
-long eval(mpc_ast_t* t) {
+long min(long *args, int num_args) {
+
+  long min = args[0];
+
+  for (int i = 1; i < num_args; i++) {
+    if (args[i] < min) {
+      min = args[i];
+    }
+  }
+
+  return min;
+}
+
+long max(long *args, int num_args) {
+  long max = args[0];
+
+  for (int i = 1; i < num_args; i++) {
+    if (args[i] > max) {
+      max = args[i];
+    }
+  }
+
+  return max;
+}
+
+long eval(mpc_ast_t *t) {
   if (strstr(t->tag, "number")) {
     return atoi(t->contents);
+  }
+
+  if (strstr(t->tag, "stmt")) {
+    char *op = t->children[0]->contents;
+    int num_args = t->children_num - 1;
+    long *func_args = malloc(sizeof(long) * num_args);
+
+    mpc_ast_t **child_ptr = t->children;
+
+    for (int i = 1; i < t->children_num; i++) {
+      mpc_ast_t *child =
+          *(child_ptr + i); // Use pointer arithmetic to access the child
+      func_args[i - 1] = eval(child);
+    }
+
+    if (strcmp(op, "min") == 0) {
+      return min(func_args, num_args);
+    } else if (strcmp(op, "max") == 0) {
+      return max(func_args, num_args);
+    } else {
+      puts("Unknown operator\n");
+      return -1000;
+    }
+
+    return -1;
   }
 
   char *op = t->children[1]->contents;
@@ -81,10 +130,10 @@ int main(int argc, char **argv) {
   mpc_parser_t *Lispify = mpc_new("lispify");
 
   mpca_lang(MPCA_LANG_DEFAULT,
-  "                                                     \
+            "                                                     \
     number   : /-?[0-9]+/ ;                             \
-    stmt     : (\"max\" | \"min\") <expr>+ ;             \
     operator : '+' | '-' | '*' | '/' | '%' | '^' ;      \
+    stmt     : (\"max\" | \"min\");             \
     expr     : <number> | '(' <operator> <expr>+ ')' | <stmt>;  \
     lispify    : /^/ <operator> <expr>+ /$/ ;             \
   ",
@@ -102,11 +151,11 @@ int main(int argc, char **argv) {
 
     if (mpc_parse("<stdin>", input, Lispify, &r)) {
       /* On success print and delete the AST */
-      mpc_ast_print(r.output);
+      /* mpc_ast_print(r.output); */
 
-      /* long result = eval(r.output); */
+      long result = eval(r.output);
 
-      /* printf("%li\n", result); */
+      printf("%li\n", result);
 
       mpc_ast_delete(r.output);
     } else {
