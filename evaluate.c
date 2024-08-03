@@ -75,6 +75,7 @@ long eval(mpc_ast_t* t) {
 int main(int argc, char **argv) {
   /* Create Some Parsers */
   mpc_parser_t *Number = mpc_new("number");
+  mpc_parser_t *Stmt = mpc_new("stmt");
   mpc_parser_t *Operator = mpc_new("operator");
   mpc_parser_t *Expr = mpc_new("expr");
   mpc_parser_t *Lispify = mpc_new("lispify");
@@ -82,11 +83,12 @@ int main(int argc, char **argv) {
   mpca_lang(MPCA_LANG_DEFAULT,
   "                                                     \
     number   : /-?[0-9]+/ ;                             \
+    stmt     : (\"max\" | \"min\") <expr>+ ;             \
     operator : '+' | '-' | '*' | '/' | '%' | '^' ;      \
-    expr     : <number> | '(' <operator> <expr>+ ')' ;  \
+    expr     : <number> | '(' <operator> <expr>+ ')' | <stmt>;  \
     lispify    : /^/ <operator> <expr>+ /$/ ;             \
   ",
-            Number, Operator, Expr, Lispify);
+            Number, Stmt, Operator, Expr, Lispify);
 
   puts("Lispify Version 0.0.2");
   puts("Press Ctrl+c to Exit\n");
@@ -100,8 +102,12 @@ int main(int argc, char **argv) {
 
     if (mpc_parse("<stdin>", input, Lispify, &r)) {
       /* On success print and delete the AST */
-      long result = eval(r.output);
-      printf("%li\n", result);
+      mpc_ast_print(r.output);
+
+      /* long result = eval(r.output); */
+
+      /* printf("%li\n", result); */
+
       mpc_ast_delete(r.output);
     } else {
       /* Otherwise print and delete the Error */
