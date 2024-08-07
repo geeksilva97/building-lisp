@@ -1,6 +1,7 @@
 #include "mpc.h"
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifdef _WIN32
@@ -27,7 +28,7 @@ void add_history(char *unused) {}
 typedef struct {
   int type;
   union { // Add union to save memory since num and err are never used at the same time we can use the same memory location
-    long num;
+    double num;
     int err;
   };
 } lval;
@@ -36,7 +37,7 @@ enum { LVAL_NUM, LVAL_ERR };
 
 enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
 
-lval lval_num(long x) {
+lval lval_num(double x) {
   lval v;
   v.type = LVAL_NUM;
   v.num = x;
@@ -53,7 +54,7 @@ lval lval_err(int x) {
 void lval_print(lval v) {
   switch (v.type) {
   case LVAL_NUM:
-    printf("%li", v.num);
+    printf("%f", v.num);
     break;
 
   case LVAL_ERR:
@@ -91,9 +92,9 @@ lval eval_op(lval x, char *op, lval y) {
     return lval_num(pow(x.num, y.num));
   }
 
-  if (strcmp(op, "%") == 0) {
-    return lval_num(x.num % y.num);
-  }
+  /* if (strcmp(op, "%") == 0) { */
+  /*   return lval_num(x.num % y.num); */
+  /* } */
 
   if (strcmp(op, "+") == 0) {
     return lval_num(x.num + y.num);
@@ -143,7 +144,7 @@ lval eval(mpc_ast_t *t) {
   if (strstr(t->tag, "number")) {
     errno = 0;
 
-    long x = strtol(t->contents, NULL, 10);
+    double x = atof((*t).contents);
 
     return errno != ERANGE ? lval_num(x) : lval_err(LERR_BAD_NUM);
   }
@@ -171,7 +172,7 @@ int main(int argc, char **argv) {
 
   mpca_lang(MPCA_LANG_DEFAULT,
             "                                                     \
-    number   : /-?[0-9]+/ ;                             \
+    number   : /-?[0-9]+(\\.?[0-9]+)?/ ;                             \
     operator : '+' | '-' | '*' | '/' | '%' | '^' ;      \
     expr     : <number> | '(' <operator> <expr>+ ')';  \
     lispify    : /^/ <operator> <expr>+ /$/ ;             \
