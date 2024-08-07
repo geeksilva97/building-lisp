@@ -26,8 +26,10 @@ void add_history(char *unused) {}
 
 typedef struct {
   int type;
-  long num;
-  int err;
+  union { // Add union to save memory since num and err are never used at the same time we can use the same memory location
+    long num;
+    int err;
+  };
 } lval;
 
 enum { LVAL_NUM, LVAL_ERR };
