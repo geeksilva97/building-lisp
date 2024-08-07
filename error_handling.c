@@ -92,9 +92,9 @@ lval eval_op(lval x, char *op, lval y) {
     return lval_num(pow(x.num, y.num));
   }
 
-  /* if (strcmp(op, "%") == 0) { */
-  /*   return lval_num(x.num % y.num); */
-  /* } */
+  if (strcmp(op, "%") == 0) {
+    return lval_num((long) x.num % (long) y.num);
+  }
 
   if (strcmp(op, "+") == 0) {
     return lval_num(x.num + y.num);
