@@ -373,6 +373,19 @@ long max(long *args, int num_args) {
   return max;
 }
 
+lval *builtin_len(lval *a) {
+  LASSERT(a, a->count == 1,
+          "Function 'len' expects only one argument!");
+  LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
+          "Function 'len' passed incorrect type. A Q-Expression is expected!");
+
+  lval *v = lval_num(a->cell[0]->count);
+
+  lval_del(a);
+
+  return v;
+}
+
 lval *builtin_head(lval *a) {
   LASSERT(a, a->count == 1, "Function 'head' passed too many arguments!");
   LASSERT(a, a->cell[0]->type == LVAL_QEXPR,
@@ -417,31 +430,6 @@ lval *builtin_eval(lval *a) {
   return lval_eval(x);
 }
 
-lval *builtin(lval *a, char *func) {
-  if (strcmp("list", func) == 0) {
-    return builtin_list(a);
-  }
-
-  if (strcmp("head", func) == 0) {
-    return builtin_head(a);
-  }
-
-  if (strcmp("tail", func) == 0) {
-    return builtin_tail(a);
-  }
-
-  if (strcmp("eval", func) == 0) {
-    return builtin_eval(a);
-  }
-
-  if (strstr("+-/*%^", func)) {
-    return builtin_op(a, func);
-  }
-
-  lval_del(a);
-
-  return lval_err("Unknown Function!");
-}
 
 lval *lval_join(lval *x, lval *y) {
   while (y->count) {
@@ -470,6 +458,38 @@ lval *builtin_join(lval *a) {
   return x;
 }
 
+lval *builtin(lval *a, char *func) {
+  if (strcmp("len", func) == 0) {
+    return builtin_len(a);
+  }
+
+  if (strcmp("list", func) == 0) {
+    return builtin_list(a);
+  }
+
+  if (strcmp("head", func) == 0) {
+    return builtin_head(a);
+  }
+
+  if (strcmp("tail", func) == 0) {
+    return builtin_tail(a);
+  }
+
+  if (strcmp("eval", func) == 0) {
+    return builtin_eval(a);
+  }
+
+  if (strcmp("join", func) == 0) { return builtin_join(a); }
+
+  if (strstr("+-/*%^", func)) {
+    return builtin_op(a, func);
+  }
+
+  lval_del(a);
+
+  return lval_err("Unknown Function!");
+}
+
 int main(int argc, char **argv) {
   /* Create Some Parsers */
   mpc_parser_t *Number = mpc_new("number");
@@ -482,7 +502,7 @@ int main(int argc, char **argv) {
   mpca_lang(MPCA_LANG_DEFAULT,
             "                                                     \
     number   : /-?[0-9]+(\\.?[0-9]+)?/ ;                             \
-    symbol : \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | '+' | '-' | '*' | '/' | '%' | '^';      \
+    symbol : \"list\" | \"head\" | \"tail\" | \"join\" | \"eval\" | \"len\" | '+' | '-' | '*' | '/' | '%' | '^';      \
     sexpr     : '(' <expr>* ')';  \
     qexpr     : '{' <expr>* '}';  \
     expr      : <number> | <symbol> | <sexpr> | <qexpr>;  \
