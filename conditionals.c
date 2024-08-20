@@ -561,6 +561,29 @@ lval *builtin_eval(lenv *e, lval *a) {
   return lval_eval(e, x);
 }
 
+lval *builtin_if(lenv *e, lval *a) {
+  LASSERT_NUM("if", a, 3);
+  LASSERT_TYPE("if", a, 0, LVAL_BOOL);
+  LASSERT_TYPE("if", a, 1, LVAL_QEXPR);
+  LASSERT_TYPE("if", a, 2, LVAL_QEXPR);
+
+  int cond = a->cell[0]->bool_val;
+
+  lval *x;
+
+  if (cond) {
+    x = lval_take(a, 1);
+  } else {
+    x = lval_take(a, 2);
+  }
+
+  lval_del(a);
+
+  x->type = LVAL_SEXPR;
+
+  return lval_eval(e, x);
+}
+
 lval *builtin_join(lenv *e, lval *a) {
 
   for (int i = 0; i < a->count; i++) {
@@ -693,6 +716,10 @@ void lenv_add_builtins(lenv *e) {
   lenv_add_builtin(e, "!=", builtin_uneq);
   lenv_add_builtin(e, ">=", builtin_ge);
   lenv_add_builtin(e, "<=", builtin_le);
+
+  /* Conditionals */
+
+  lenv_add_builtin(e, "if", builtin_if);
 }
 
 /* Evaluation */
